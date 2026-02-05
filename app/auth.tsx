@@ -1,5 +1,5 @@
 import { useAuth } from "@/lib/auth-context";
-import { useRouter } from "expo-router";
+// Removed useRouter as navigation is handled by RouteGuard
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -23,11 +23,10 @@ export default function AuthScreen() {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string | null>("");
+  const [loading, setLoading] = useState(false);
 
   const theme = useTheme();
   const shiftAnimation = useRef(new Animated.Value(0)).current;
-
-  const router = useRouter();
   const { signIn, signUp } = useAuth();
 
   const isValidEmail = (email: string) => {
@@ -52,27 +51,27 @@ export default function AuthScreen() {
       setError("Please enter a valid email address.");
       return;
     }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
       return;
     }
 
+    setLoading(true);
+
+    let responseError = null;
+
     if (isSignedUp) {
-      const error = await signUp(email, password);
-      if (error) {
-        setError(error);
-        return;
-      }
+      responseError = await signUp(email, password);
     } else {
-      const error = await signIn(email, password);
-      if (error) {
-        setError(error);
-        return;
-      }
+      responseError = await signIn(email, password);
     }
 
-    router.replace("/")
-    console.log("Validation Passed. Submitting...", { email, password });
+    setLoading(false);
+
+    if (responseError) {
+      setError(responseError);
+      return;
+    }
   };
 
   // Shift animation logic
@@ -148,7 +147,7 @@ export default function AuthScreen() {
               setPassword(text);
               setError(null);
             }}
-            error={!!error && password.length > 0 && password.length < 6}
+            error={!!error && password.length > 0 && password.length < 8}
           />
 
           {error ? (
@@ -157,11 +156,22 @@ export default function AuthScreen() {
             </HelperText>
           ) : null}
 
-          <Button mode="contained" style={styles.button} onPress={handleAuth}>
+          <Button
+            mode="contained"
+            style={styles.button}
+            onPress={handleAuth}
+            loading={loading}
+            disabled={loading}
+          >
             {isSignedUp ? "Sign Up" : "Sign In"}
           </Button>
 
-          <Button mode="text" onPress={handleSwitchMode} style={styles.button}>
+          <Button
+            mode="text"
+            onPress={handleSwitchMode}
+            style={styles.button}
+            disabled={loading}
+          >
             {isSignedUp
               ? "Already have an account? Sign In"
               : "Don't have an account? Sign Up"}

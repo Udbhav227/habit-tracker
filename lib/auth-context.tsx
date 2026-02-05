@@ -27,7 +27,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const session = await account.get();
       setUser(session);
     } catch (error) {
-      console.error(error);
       setUser(null);
     } finally {
       setIsLoadingUser(false);
@@ -40,10 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await signIn(email, password);
       return null;
     } catch (error) {
-      if (error instanceof Error) {
-        return error.message;
-      }
-
+      if (error instanceof Error) return error.message;
       return "An error occurred during signup";
     }
   };
@@ -51,12 +47,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       await account.createEmailPasswordSession(email, password);
+      const sessionUser = await account.get();
+      setUser(sessionUser);
       return null;
-    } catch (error) {
-      if (error instanceof Error) {
-        return error.message;
+    } catch (error: any) {
+      if (error?.code === 401) {
+        return "Incorrect email or password. Please try again.";
       }
 
+      if (error instanceof Error) return error.message;
       return "An error occurred during sign in";
     }
   };
@@ -84,6 +83,5 @@ export function useAuth() {
   if (context === undefined) {
     throw new Error("useAuth must be inside of the AuthProvider");
   }
-
   return context;
 }
