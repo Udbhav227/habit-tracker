@@ -1,23 +1,81 @@
-import React, { useEffect, useRef } from "react";
+import { useAuth } from "@/lib/auth-context";
+import { useRouter } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  Platform,
-  StyleSheet,
-  View,
-  Keyboard,
   Animated,
   Easing,
+  Keyboard,
+  Platform,
+  StyleSheet,
   TouchableWithoutFeedback,
+  View,
 } from "react-native";
-import { Button, Text, TextInput } from "react-native-paper";
+import {
+  Button,
+  HelperText,
+  Text,
+  TextInput,
+  useTheme,
+} from "react-native-paper";
 
 export default function AuthScreen() {
-  const [isSignedUp, setIsSignedUp] = React.useState<boolean>(false);
+  const [isSignedUp, setIsSignedUp] = useState<boolean>(false);
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [error, setError] = useState<string | null>("");
+
+  const theme = useTheme();
   const shiftAnimation = useRef(new Animated.Value(0)).current;
+
+  const router = useRouter();
+  const { signIn, signUp } = useAuth();
+
+  const isValidEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
 
   const handleSwitchMode = () => {
     setIsSignedUp((prev) => !prev);
+    setError(null);
+    setEmail("");
+    setPassword("");
   };
 
+  const handleAuth = async () => {
+    setError(null);
+
+    if (!email.trim() || !password.trim()) {
+      setError("Please fill in all the fields.");
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
+    if (isSignedUp) {
+      const error = await signUp(email, password);
+      if (error) {
+        setError(error);
+        return;
+      }
+    } else {
+      const error = await signIn(email, password);
+      if (error) {
+        setError(error);
+        return;
+      }
+    }
+
+    router.replace("/")
+    console.log("Validation Passed. Submitting...", { email, password });
+  };
+
+  // Shift animation logic
   useEffect(() => {
     const showEvent =
       Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
@@ -61,8 +119,9 @@ export default function AuthScreen() {
           ]}
         >
           <Text style={styles.title} variant="headlineMedium">
-            {isSignedUp ? "Create Account" : "Welcome Back"}
+            {isSignedUp ? "Create Account" : "Welcome Back!"}
           </Text>
+
           <TextInput
             label="Email"
             autoCapitalize="none"
@@ -70,18 +129,38 @@ export default function AuthScreen() {
             placeholder="example@gmail.com"
             mode="outlined"
             style={styles.input}
+            value={email}
+            onChangeText={(text) => {
+              setEmail(text);
+              setError(null);
+            }}
+            error={!!error && !isValidEmail(email) && email.length > 0}
           />
+
           <TextInput
             label="Password"
             autoCapitalize="none"
             secureTextEntry
             mode="outlined"
             style={styles.input}
+            value={password}
+            onChangeText={(text) => {
+              setPassword(text);
+              setError(null);
+            }}
+            error={!!error && password.length > 0 && password.length < 6}
           />
 
-          <Button mode="contained" style={styles.button}>
+          {error ? (
+            <HelperText type="error" visible={!!error}>
+              {error}
+            </HelperText>
+          ) : null}
+
+          <Button mode="contained" style={styles.button} onPress={handleAuth}>
             {isSignedUp ? "Sign Up" : "Sign In"}
           </Button>
+
           <Button mode="text" onPress={handleSwitchMode} style={styles.button}>
             {isSignedUp
               ? "Already have an account? Sign In"
@@ -108,10 +187,10 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   input: {
-    marginBottom: 16,
+    marginBottom: 8,
   },
   button: {
     textAlign: "center",
-    marginBottom: 8,
+    marginTop: 8,
   },
 });

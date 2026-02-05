@@ -1,8 +1,18 @@
-import { StyleSheet, View, Text } from "react-native";
+import { useAuth } from "@/lib/auth-context";
+import { StyleSheet, Text, View } from "react-native";
+import { Button } from "react-native-paper";
 
 export default function Index() {
+  const { signOut } = useAuth();
   return (
-    <View style={styles.view}><Text>asdf</Text></View>
+    <>
+      <View style={styles.view}>
+        <Text>Welcome to the home page!</Text>
+      <Button mode="text" onPress={signOut} icon={"logout"}>
+        Sign Out
+      </Button>
+      </View>
+    </>
   );
 }
 
@@ -16,6 +26,6 @@ const styles = StyleSheet.create({
   navButton: {
     width: 200,
     height: 50,
-    backgroundColor: "crimson",
+    backgroundColor: "coral",
   },
 });
