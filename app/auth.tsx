@@ -1,5 +1,4 @@
 import { useAuth } from "@/lib/auth-context";
-// Removed useRouter as navigation is handled by RouteGuard
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
