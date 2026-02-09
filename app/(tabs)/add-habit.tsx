@@ -5,6 +5,7 @@ import { useState } from "react";
 import { StyleSheet, View, ScrollView } from "react-native";
 import { ID } from "react-native-appwrite";
 import { Button, SegmentedButtons, TextInput, HelperText, Surface, Text } from "react-native-paper";
+import * as Haptics from "expo-haptics";
 
 const FREQUENCIES = ["daily", "weekly", "monthly"] as const;
 type Frequency = (typeof FREQUENCIES)[number];
@@ -30,7 +31,10 @@ export default function AddHabitScreen() {
 
   const handleSubmit = async () => {
     setErrors({});
-    if (!user || !validate()) return;
+    if (!user || !validate()) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    } 
 
     if (!DATABASE_ID || !HABITS_COLLECTION_ID) {
       setErrors({ general: "Database configuration missing. Check your environment variables." });
@@ -52,11 +56,13 @@ export default function AddHabitScreen() {
           last_completed: null, 
         }
       );
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setTitle("");
       setDesc("");
       setFreq("daily");
       router.back();
     } catch (error: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setErrors({ general: error.message || "Something went wrong. Please try again." });
     } finally {
       setLoading(false);

@@ -21,6 +21,7 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="index"
           options={{
+            title: "My Habits",
             headerShown: false,
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons
