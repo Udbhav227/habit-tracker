@@ -1,50 +1,68 @@
-# Welcome to your Expo app 👋
+# Habit Tracker 📝
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A personal habit tracking application built to learn and practice **React Native**. 
 
-## Get started
+This project demonstrates a full-stack mobile application workflow, including authentication, database interactions, and modern UI patterns.
 
-1. Install dependencies
+## 🛠️ Tech Stack
 
-   ```bash
-   npm install
-   ```
+* **Framework**: [Expo](https://expo.dev/) (React Native)
+* **Language**: TypeScript
+* **Backend**: [Appwrite](https://appwrite.io/) (Auth & Database)
+* **UI Library**: [React Native Paper](https://callstack.github.io/react-native-paper/)
+* **Navigation**: Expo Router
+* **Animations**: React Native Reanimated
 
-2. Start the app
+## 📦 Installation
 
-   ```bash
-   npx expo start
-   ```
+1.  **Clone the repository**
+    ```bash
+    git clone [https://github.com/yourusername/habit-tracker.git](https://github.com/yourusername/habit-tracker.git)
+    cd habit-tracker
+    ```
 
-In the output, you'll find options to open the app in a
+2.  **Install dependencies**
+    ```bash
+    npm install
+    ```
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+3.  **Appwrite Setup**
+    * Ensure you have an Appwrite instance running (cloud or self-hosted).
+    * Update your Appwrite configuration in `lib/appwrite.ts` with your *Project ID* and *Endpoint*.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+4.  **Run the project**
+    ```bash
+    npx expo start
+    ```
 
-## Get a fresh project
+## 📱 Running on Devices
 
-When you're ready, run:
+* **iOS Simulator**: Press `i` in the terminal after running the start command.
+* **Android Emulator**: Press `a` in the terminal.
+* **Physical Device**: Install the **Expo Go** app and scan the QR code.
 
-```bash
-npm run reset-project
+## 📂 Project Structure
+
+```text
+app/
+├── (tabs)/          # Main app screens (Home, Add Habit, Streaks)
+├── auth.tsx         # Authentication screen
+├── _layout.tsx      # Root layout & Context providers
+lib/
+├── appwrite.ts      # Appwrite SDK configuration
+├── auth-context.tsx # Authentication state management
+
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## 📝 Learning Goals
 
-## Learn more
+This project was created to explore:
 
-To learn more about developing your project with Expo, look at the following resources:
+* Integrating a backend-as-a-service (Appwrite) with React Native.
+* Mastering `expo-router` for navigation.
+* Handling global state with React Context.
+* Building responsive layouts with React Native Paper.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## 📄 License
 
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+This project is for educational purposes. Feel free to use it as a reference!
