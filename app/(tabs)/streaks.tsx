@@ -256,7 +256,7 @@ export default function StreaksScreen() {
                     </View>
                     <View>
                       <Text style={styles.statValue}>{streak}</Text>
-                      <Text style={styles.statLabel}>Current</Text>
+                      <Text style={styles.statLabel}>Curr</Text>
                     </View>
                   </View>
 
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   card: {
-    marginBottom: 16,
+    marginBottom: 12,
     borderRadius: 24,
     backgroundColor: colors.card,
     borderWidth: 1,
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   statLabel: {
-    fontSize: 8,
+    fontSize: 11,
     color: "#999",
     fontWeight: "600",
     textTransform: "uppercase",
