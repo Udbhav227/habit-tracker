@@ -7,7 +7,7 @@ import {
   RealtimeResponse,
 } from "@/lib/appwrite";
 import { useAuth } from "@/lib/auth-context";
-import { Habit } from "@/types/database.type";
+import { Habit, HabitCompletion } from "@/types/database.type";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
@@ -38,6 +38,7 @@ export default function Index() {
   };
 
   const fetchTodayCompletions = async () => {
+    if (!DATABASE_ID || !COMPLETIONS_COLLECTION_ID) return;
     try {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -49,7 +50,7 @@ export default function Index() {
           Query.greaterThanEqual("completed_at", today.toISOString()),
         ],
       );
-      const completions = response.documents as HabitCompletion[];
+      const completions = response.documents as unknown as HabitCompletion[];
       setCompletedHabits(completions.map((c) => c.habit_id));
     } catch (error) {
       console.error(error);
@@ -216,7 +217,9 @@ export default function Index() {
           ) : (
             habits.map((habit) => (
               <Swipeable
-                ref={(ref) => (swipeableRefs.current[habit.$id] = ref)}
+                ref={(ref) => {
+                  swipeableRefs.current[habit.$id] = ref;
+                }}
                 key={habit.$id}
                 overshootLeft={false}
                 renderLeftActions={renderLeftActions}
@@ -276,6 +279,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f5f5f5",
     paddingHorizontal: 20,
+    paddingTop: 24,
   },
   header: {
     flexDirection: "row",

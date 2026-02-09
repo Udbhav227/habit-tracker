@@ -21,7 +21,7 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: "Today's Habits",
+            headerShown: false,
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons
                 name="calendar-today"
@@ -34,7 +34,7 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="streaks"
           options={{
-            title: "Streaks",
+            headerShown: false,
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons
                 name="chart-line"
