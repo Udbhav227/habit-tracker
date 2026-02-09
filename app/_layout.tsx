@@ -2,15 +2,38 @@ import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { Stack, useRouter, useSegments } from "expo-router";
 import React, { useEffect } from "react";
 import { View, ActivityIndicator } from "react-native";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { PaperProvider, useTheme } from "react-native-paper";
+import {
+  PaperProvider,
+  MD3LightTheme as DefaultTheme,
+  configureFonts,
+  useTheme,
+  Text,
+} from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import {
+  useFonts,
+  Poppins_400Regular,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
+} from "@expo-google-fonts/poppins";
+import * as SplashScreen from "expo-splash-screen";
+
+SplashScreen.preventAutoHideAsync();
+
+const fontConfig = {
+  fontFamily: "Poppins_400Regular",
+};
+
+const theme = {
+  ...DefaultTheme,
+  fonts: configureFonts({ config: fontConfig }),
+};
 
 function RouteGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const segments = useSegments();
   const { user, isLoadingUser } = useAuth();
-  const theme = useTheme();
+  const paperTheme = useTheme();
 
   useEffect(() => {
     if (isLoadingUser) return;
@@ -31,10 +54,10 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
           flex: 1,
           justifyContent: "center",
           alignItems: "center",
-          backgroundColor: theme.colors.background,
+          backgroundColor: paperTheme.colors.background,
         }}
       >
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ActivityIndicator size="large" color={paperTheme.colors.primary} />
       </View>
     );
   }
@@ -43,18 +66,40 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  const [loaded, error] = useFonts({
+    Poppins_400Regular,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
+  });
+
+  useEffect(() => {
+    if (loaded || error) {
+      SplashScreen.hideAsync();
+    }
+  }, [loaded, error]);
+
+  if (!loaded && !error) {
+    return null;
+  }
+
   return (
     <AuthProvider>
-      {/* <PaperProvider> */}
+      <PaperProvider theme={theme}>
         <SafeAreaProvider>
           <RouteGuard>
-            <Stack screenOptions={{ headerShown: false }}>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                headerTitleStyle: { fontFamily: "Poppins_700Bold" },
+                headerBackTitleStyle: { fontFamily: "Poppins_400Regular" },
+              }}
+            >
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="auth" />
             </Stack>
           </RouteGuard>
         </SafeAreaProvider>
-      {/* </PaperProvider> */}
+      </PaperProvider>
     </AuthProvider>
   );
 }
