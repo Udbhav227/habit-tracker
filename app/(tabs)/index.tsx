@@ -11,7 +11,13 @@ import { Habit, HabitCompletion } from "@/types/database.type";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useEffect, useRef, useState } from "react";
-import { FlatList, ListRenderItem, StyleSheet, View } from "react-native";
+import {
+  FlatList,
+  ListRenderItem,
+  StyleSheet,
+  View,
+  Animated as RNAnimated,
+} from "react-native";
 import { ID, Query } from "react-native-appwrite";
 import {
   GestureHandlerRootView,
@@ -23,6 +29,7 @@ import Animated, {
   FadeOutUp,
   LinearTransition,
 } from "react-native-reanimated";
+import ConfettiCannon from "react-native-confetti-cannon";
 
 export default function Index() {
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -31,6 +38,7 @@ export default function Index() {
   const [loading, setLoading] = useState(true);
 
   const swipeableRefs = useRef<Map<string, Swipeable>>(new Map());
+  const confettiRef = useRef<ConfettiCannon>(null);
 
   const fetchHabits = async () => {
     if (!DATABASE_ID || !HABITS_COLLECTION_ID || !user?.$id) return;
@@ -103,7 +111,7 @@ export default function Index() {
   }, [user?.$id]);
 
   const handleDeleteHabit = async (id: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
 
     setHabits((current) => current.filter((h) => h.$id !== id));
 
@@ -119,7 +127,8 @@ export default function Index() {
   const handleCompleteHabit = async (id: string) => {
     if (completedHabits.includes(id)) return;
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    confettiRef.current?.start();
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
     const currentDate = new Date().toISOString();
     setCompletedHabits((prev) => [...prev, id]);
@@ -160,13 +169,41 @@ export default function Index() {
     }
   };
 
-  const renderLeftActions = () => (
-    <View style={styles.swipeActionLeft}>
-      <MaterialCommunityIcons name="trash-can-outline" size={32} color="#fff" />
-    </View>
-  );
+  const renderLeftActions = (
+    _progress: RNAnimated.AnimatedInterpolation<number>,
+    dragX: RNAnimated.AnimatedInterpolation<number>,
+  ) => {
+    const scale = dragX.interpolate({
+      inputRange: [0, 80],
+      outputRange: [0.5, 3],
+      extrapolate: "clamp",
+    });
 
-  const renderRightActions = (id: string, isCompleted: boolean) => {
+    return (
+      <View style={styles.swipeActionLeft}>
+        <RNAnimated.View style={{ transform: [{ scale }] }}>
+          <MaterialCommunityIcons
+            name="trash-can-outline"
+            size={32}
+            color="#fff"
+          />
+        </RNAnimated.View>
+      </View>
+    );
+  };
+
+  const renderRightActions = (
+    progress: RNAnimated.AnimatedInterpolation<number>,
+    _dragX: RNAnimated.AnimatedInterpolation<number>,
+    id: string,
+    isCompleted: boolean,
+  ) => {
+    const scale = progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.5, 3],
+      extrapolate: "clamp",
+    });
+
     return (
       <View
         style={[
@@ -174,11 +211,13 @@ export default function Index() {
           isCompleted && { backgroundColor: "#81c784" },
         ]}
       >
-        <MaterialCommunityIcons
-          name={isCompleted ? "check-all" : "check"}
-          size={32}
-          color="#fff"
-        />
+        <RNAnimated.View style={{ transform: [{ scale }] }}>
+          <MaterialCommunityIcons
+            name={isCompleted ? "check-all" : "check"}
+            size={32}
+            color="#fff"
+          />
+        </RNAnimated.View>
       </View>
     );
   };
@@ -203,17 +242,19 @@ export default function Index() {
             if (ref) swipeableRefs.current.set(item.$id, ref);
           }}
           renderLeftActions={renderLeftActions}
-          renderRightActions={() => renderRightActions(item.$id, isCompleted)}
+          renderRightActions={(progress, dragX) =>
+            renderRightActions(progress, dragX, item.$id, isCompleted)
+          }
+          failOffsetY={[-5, 5]}
+          activeOffsetX={[-20, 20]}
+          onSwipeableWillOpen={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }}
           leftThreshold={80}
           rightThreshold={80}
           overshootLeft={false}
           overshootRight={false}
           friction={2}
-          onSwipeableWillOpen={() => {
-            swipeableRefs.current.forEach((ref, key) => {
-              if (key !== item.$id) ref?.close();
-            });
-          }}
           onSwipeableOpen={(direction) => {
             if (direction === "left") handleDeleteHabit(item.$id);
             if (direction === "right") handleCompleteHabit(item.$id);
@@ -266,7 +307,7 @@ export default function Index() {
   };
 
   return (
-    <GestureHandlerRootView>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.container}>
         <View style={styles.header}>
           <Text variant="headlineSmall" style={styles.title}>
@@ -302,38 +343,38 @@ export default function Index() {
             }
           />
         )}
+        <ConfettiCannon
+          count={180}
+          origin={{ x: -20, y: 0 }}
+          autoStart={false}
+          ref={confettiRef}
+          fadeOut={true}
+        />
       </View>
     </GestureHandlerRootView>
   );
 }
 
 const colors = {
-  bg: "#FFF7ED", // warm peachy background
+  bg: "#FFF7ED",
   card: "#FFFFFF",
   cardBorder: "#FFE4C7",
-
-  textPrimary: "#3A2D28", // warm dark brown
+  textPrimary: "#3A2D28",
   textSecondary: "#7A5C52",
-
-  accent: "#FF7A00", // fun orange
+  accent: "#FF7A00",
   accentSoft: "#FFF0E0",
-
   success: "#4CAF50",
   successSoft: "#E8F7EC",
-
   danger: "#FF6B6B",
-
   streak: "#FF9800",
   freqDaily: "#6C5CE7",
   freqWeekly: "#00B894",
-  freqMonthly: "#E17055",
+  freqMonthly: "#0984e3",
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // backgroundColor: "#f5f5f5",
-    paddingHorizontal: 20,
     backgroundColor: colors.bg,
     paddingTop: 60,
   },
@@ -342,6 +383,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 24,
+    paddingHorizontal: 20,
   },
   title: {
     fontWeight: "800",
@@ -353,11 +395,11 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: 16,
+    marginHorizontal: 20,
     borderRadius: 24,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.cardBorder,
-
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.08,
@@ -388,7 +430,6 @@ const styles = StyleSheet.create({
   },
   cardCompleted: {
     backgroundColor: "#F9FAFB",
-    // opacity: 0.8,
   },
   streakBadge: {
     flexDirection: "row",
@@ -414,7 +455,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#fff",
   },
-
   center: {
     flex: 1,
     justifyContent: "center",
@@ -435,6 +475,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "flex-start",
     flex: 1,
+    marginHorizontal: 20,
     backgroundColor: colors.danger,
     borderRadius: 24,
     marginBottom: 18,
@@ -446,6 +487,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "flex-end",
     flex: 1,
+    marginHorizontal: 20,
     backgroundColor: colors.success,
     borderRadius: 24,
     marginBottom: 18,
