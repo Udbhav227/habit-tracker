@@ -9,9 +9,8 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import { Habit, HabitCompletion } from "@/types/database.type";
 import { useEffect, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View, ScrollView } from "react-native";
 import { Query } from "react-native-appwrite";
-import { ScrollView } from "react-native-gesture-handler";
 import { Card, Text } from "react-native-paper";
 
 export default function StreaksScreen() {
@@ -167,7 +166,7 @@ export default function StreaksScreen() {
       </Text>
       {rankedHabits.length > 0 && (
         <View style={styles.rankingContainer}>
-          <Text style={styles.rankingTitle}> 🏅 Top Streaks</Text>{" "}
+          <Text style={styles.rankingTitle}> 🏅 Top Streaks</Text>
           {rankedHabits.slice(0, 3).map((item, key) => (
             <View key={key} style={styles.rankingRow}>
               <View style={[styles.rankingBadge, badgeStyles[key]]}>
@@ -198,9 +197,7 @@ export default function StreaksScreen() {
                 <Text variant="titleMedium" style={styles.habitTitle}>
                   {habit.title}
                 </Text>
-                <Text style={styles.habitDescription}>
-                  {habit.description}
-                </Text>
+                <Text style={styles.habitDescription}>{habit.description}</Text>
                 <View style={styles.statsRow}>
                   <View style={styles.statBadge}>
                     <Text style={styles.statBadgeText}> 🔥 {streak}</Text>

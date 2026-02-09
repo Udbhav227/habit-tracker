@@ -241,7 +241,6 @@ export default function Index() {
                   ]}
                   elevation={0}
                 >
-                  {" "}
                   <View style={styles.cardContent}>
                     <Text style={styles.cardTitle}>{habit.title}</Text>
                     <Text style={styles.cardDesc}>{habit.description}</Text>
