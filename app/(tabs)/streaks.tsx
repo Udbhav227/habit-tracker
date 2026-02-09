@@ -8,15 +8,38 @@ import {
 } from "@/lib/appwrite";
 import { useAuth } from "@/lib/auth-context";
 import { Habit, HabitCompletion } from "@/types/database.type";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
-import { StyleSheet, View, ScrollView } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { Query } from "react-native-appwrite";
-import { Card, Text } from "react-native-paper";
+import { ActivityIndicator, Surface, Text } from "react-native-paper";
+
+const colors = {
+  bg: "#FFF7ED",
+  card: "#FFFFFF",
+  cardBorder: "#FFE4C7",
+  textPrimary: "#3A2D28",
+  textSecondary: "#7A5C52",
+  accent: "#FF7A00",
+  accentSoft: "#FFF0E0",
+  success: "#4CAF50",
+  successSoft: "#E8F7EC",
+  danger: "#FF6B6B",
+  streak: "#FF9800",
+  gold: "#FFD700",
+  goldSoft: "#FFF9C4",
+  silver: "#C0C0C0",
+  bronze: "#CD7F32",
+};
 
 export default function StreaksScreen() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [completedHabits, setCompletedHabits] = useState<HabitCompletion[]>([]);
+  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+
+  const truncate = (text: string, max = 40) =>
+    text.length > max ? `${text.slice(0, max)}…` : text;
 
   useEffect(() => {
     if (user) {
@@ -25,20 +48,8 @@ export default function StreaksScreen() {
         habitsChannel,
         (response: RealtimeResponse) => {
           if (
-            response.events.includes(
-              "databases.*.collections.*.documents.*.create",
-            )
-          ) {
-            fetchHabits();
-          } else if (
-            response.events.includes(
-              "databases.*.collections.*.documents.*.update",
-            )
-          ) {
-            fetchHabits();
-          } else if (
-            response.events.includes(
-              "databases.*.collections.*.documents.*.delete",
+            response.events.some((e) =>
+              e.includes("databases.*.collections.*.documents"),
             )
           ) {
             fetchHabits();
@@ -72,7 +83,6 @@ export default function StreaksScreen() {
 
   const fetchHabits = async () => {
     if (!DATABASE_ID || !HABITS_COLLECTION_ID || !user?.$id) return;
-
     try {
       const response = await databases.listDocuments(
         DATABASE_ID,
@@ -82,12 +92,13 @@ export default function StreaksScreen() {
       setHabits(response.documents as unknown as Habit[]);
     } catch (error) {
       console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchCompletions = async () => {
     if (!DATABASE_ID || !COMPLETIONS_COLLECTION_ID || !user?.$id) return;
-
     try {
       const response = await databases.listDocuments(
         DATABASE_ID,
@@ -120,11 +131,9 @@ export default function StreaksScreen() {
       return { streak: 0, bestStreak: 0, total: 0 };
     }
 
-    // build streak data
     let streak = 0;
     let bestStreak = 0;
     let total = habitCompletions.length;
-
     let lastDate: Date | null = null;
     let currentStreak = 0;
 
@@ -133,7 +142,6 @@ export default function StreaksScreen() {
       if (lastDate) {
         const diff =
           (date.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24);
-
         if (diff <= 1.5) {
           currentStreak += 1;
         } else {
@@ -158,62 +166,134 @@ export default function StreaksScreen() {
 
   const rankedHabits = habitStreaks.sort((a, b) => b.bestStreak - a.bestStreak);
 
-  const badgeStyles = [styles.badge1, styles.badge2, styles.badge3];
+  const getRankColor = (index: number) => {
+    if (index === 0) return colors.gold;
+    if (index === 1) return colors.silver;
+    if (index === 2) return colors.bronze;
+    return colors.accentSoft;
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title} variant="headlineSmall">
-        Habit Streaks
-      </Text>
-      {rankedHabits.length > 0 && (
-        <View style={styles.rankingContainer}>
-          <Text style={styles.rankingTitle}> 🏅 Top Streaks</Text>
-          {rankedHabits.slice(0, 3).map((item, key) => (
-            <View key={key} style={styles.rankingRow}>
-              <View style={[styles.rankingBadge, badgeStyles[key]]}>
-                <Text style={styles.rankingBadgeText}> {key + 1} </Text>
-              </View>
-              <Text style={styles.rankingHabit}> {item.habit.title}</Text>
-              <Text style={styles.rankingStreak}> {item.bestStreak}</Text>
-            </View>
-          ))}
-        </View>
-      )}
+      <View style={styles.header}>
+        <Text variant="headlineSmall" style={styles.title}>
+          Habit Streaks
+        </Text>
+      </View>
 
-      {habits.length === 0 ? (
-        <View>
-          <Text> No Habits yet. Add your first Habit!</Text>
+      {loading && habits.length === 0 ? (
+        <ActivityIndicator animating={true} style={{ marginTop: 50 }} />
+      ) : habits.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>
+            No habits yet. Add your first Habit!
+          </Text>
         </View>
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
-          style={styles.container}
+          contentContainerStyle={styles.scrollContent}
         >
-          {rankedHabits.map(({ habit, streak, bestStreak, total }, key) => (
-            <Card
-              key={key}
-              style={[styles.card, key === 0 && styles.firstCard]}
-            >
-              <Card.Content>
-                <Text variant="titleMedium" style={styles.habitTitle}>
-                  {habit.title}
-                </Text>
-                <Text style={styles.habitDescription}>{habit.description}</Text>
-                <View style={styles.statsRow}>
-                  <View style={styles.statBadge}>
-                    <Text style={styles.statBadgeText}> 🔥 {streak}</Text>
-                    <Text style={styles.statLabel}> Current</Text>
+          {rankedHabits.length > 0 && (
+            <Surface style={styles.rankingCard} elevation={2}>
+              <View style={styles.rankingHeader}>
+                <MaterialCommunityIcons
+                  name="medal-outline"
+                  size={24}
+                  color={colors.streak}
+                />
+                <Text style={styles.rankingTitle}>Top Streaks</Text>
+              </View>
+
+              {rankedHabits.slice(0, 3).map((item, index) => (
+                <View
+                  key={item.habit.$id}
+                  style={[
+                    styles.rankingRow,
+                    index !== 2 && styles.rankingBorder,
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.rankBadge,
+                      { backgroundColor: getRankColor(index) },
+                    ]}
+                  >
+                    <Text style={styles.rankText}>{index + 1}</Text>
                   </View>
-                  <View style={styles.statBadgeGold}>
-                    <Text style={styles.statBadgeText}> 🏆 {bestStreak}</Text>
-                    <Text style={styles.statLabel}> Best</Text>
-                  </View>
-                  <View style={styles.statBadgeGreen}>
-                    <Text style={styles.statBadgeText}> ✅ {total}</Text>
-                    <Text style={styles.statLabel}> Total</Text>
+                  <Text style={styles.rankHabitName}>{item.habit.title}</Text>
+                  <View style={styles.rankScore}>
+                    <Text style={styles.rankScoreText}>{item.bestStreak}</Text>
+                    <MaterialCommunityIcons
+                      name="fire"
+                      size={14}
+                      color={colors.streak}
+                    />
                   </View>
                 </View>
-              </Card.Content>
-            </Card>
+              ))}
+            </Surface>
+          )}
+
+          {rankedHabits.map(({ habit, streak, bestStreak, total }) => (
+            <Surface key={habit.$id} style={styles.card} elevation={1}>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardTitle}>{habit.title}</Text>
+                {habit.description ? (
+                  <Text style={styles.cardDesc} numberOfLines={1}>
+                    {truncate(habit.description)}
+                  </Text>
+                ) : null}
+
+                <View style={styles.statsContainer}>
+                  <View style={styles.statBox}>
+                    <View style={styles.iconCircle}>
+                      <MaterialCommunityIcons
+                        name="fire"
+                        size={20}
+                        color={colors.streak}
+                      />
+                    </View>
+                    <View>
+                      <Text style={styles.statValue}>{streak}</Text>
+                      <Text style={styles.statLabel}>Curr</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.divider} />
+
+                  <View style={styles.statBox}>
+                    <View style={[styles.iconCircle, styles.goldCircle]}>
+                      <MaterialCommunityIcons
+                        name="trophy-variant"
+                        size={20}
+                        color="#B78900"
+                      />
+                    </View>
+                    <View>
+                      <Text style={styles.statValue}>{bestStreak}</Text>
+                      <Text style={styles.statLabel}>Best</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.divider} />
+
+                  <View style={styles.statBox}>
+                    <View style={[styles.iconCircle, styles.greenCircle]}>
+                      <MaterialCommunityIcons
+                        name="check-circle-outline"
+                        size={20}
+                        color={colors.success}
+                      />
+                    </View>
+                    <View>
+                      <Text style={styles.statValue}>{total}</Text>
+                      <Text style={styles.statLabel}>Total</Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            </Surface>
           ))}
         </ScrollView>
       )}
@@ -224,135 +304,170 @@ export default function StreaksScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
-    paddingHorizontal: 16,
-    paddingTop: 24,
+    backgroundColor: colors.bg,
+    paddingTop: 60,
+  },
+  header: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
   },
   title: {
-    fontWeight: "bold",
+    fontWeight: "800",
+    color: colors.textPrimary,
+    letterSpacing: -0.3,
+  },
+  scrollContent: {
+    paddingBottom: 100,
+    paddingHorizontal: 20,
+  },
+  rankingCard: {
+    backgroundColor: colors.card,
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  rankingHeader: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 16,
   },
-  card: {
-    marginBottom: 18,
-    borderRadius: 18,
-    backgroundColor: "#fff",
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    borderWidth: 1,
-    borderColor: "#f0f0f0",
-  },
-  firstCard: {
-    borderWidth: 2,
-    borderColor: "#7c4dff",
-  },
-  habitTitle: {
-    fontWeight: "bold",
-    fontSize: 18,
-    marginBottom: 2,
-  },
-  habitDescription: {
-    color: "#6c6c80",
-    marginBottom: 8,
-  },
-  statsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 12,
-    marginTop: 8,
-  },
-  statBadge: {
-    backgroundColor: "#fff3e0",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    alignItems: "center",
-    minWidth: 60,
-  },
-  statBadgeGold: {
-    backgroundColor: "#fffde7",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    alignItems: "center",
-    minWidth: 60,
-  },
-  statBadgeGreen: {
-    backgroundColor: "#e8f5e9",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    alignItems: "center",
-    minWidth: 60,
-  },
-  statBadgeText: {
-    fontWeight: "bold",
-    fontSize: 15,
-    color: "#22223b",
-  },
-  statLabel: {
-    fontSize: 11,
-    color: "#888",
-    marginTop: 2,
-    fontWeight: "500",
-  },
-
-  rankingContainer: {
-    marginBottom: 24,
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-  },
   rankingTitle: {
-    fontWeight: "bold",
     fontSize: 18,
-    marginBottom: 12,
-    color: "#7c4dff",
-    letterSpacing: 0.5,
+    fontWeight: "800",
+    color: colors.textPrimary,
+    marginLeft: 8,
   },
   rankingRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-    paddingBottom: 8,
+    paddingVertical: 12,
   },
-  rankingBadge: {
+  rankingBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+  },
+  rankBadge: {
     width: 28,
     height: 28,
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 10,
-    backgroundColor: "#e0e0e0",
+    marginRight: 12,
   },
-  badge1: { backgroundColor: "#ffd700" }, // gold
-  badge2: { backgroundColor: "#c0c0c0" }, // silver
-  badge3: { backgroundColor: "#cd7f32" }, // bronze
-
-  rankingBadgeText: {
-    fontWeight: "bold",
+  rankText: {
     color: "#fff",
-    fontSize: 15,
+    fontWeight: "bold",
+    fontSize: 14,
+  },
+  rankHabitName: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.textPrimary,
+  },
+  rankScore: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.accentSoft,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  rankScoreText: {
+    fontWeight: "800",
+    color: colors.streak,
+    marginRight: 4,
+    fontSize: 14,
+  },
+  card: {
+    marginBottom: 12,
+    borderRadius: 24,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  cardContent: {
+    padding: 20,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: colors.textPrimary,
+    marginBottom: 4,
+  },
+  cardDesc: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  statsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#FAFAFA",
+    borderRadius: 16,
+    padding: 12,
+  },
+  statBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  iconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.accentSoft,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+  goldCircle: {
+    backgroundColor: colors.goldSoft,
+  },
+  greenCircle: {
+    backgroundColor: colors.successSoft,
+  },
+  statValue: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: colors.textPrimary,
+  },
+  statLabel: {
+    fontSize: 11,
+    color: "#999",
+    fontWeight: "600",
+    textTransform: "uppercase",
+  },
+  divider: {
+    width: 1,
+    height: 24,
+    backgroundColor: "#E0E0E0",
+    marginHorizontal: 8,
   },
 
-  rankingHabit: {
-    flex: 1,
-    fontSize: 15,
-    color: "#333",
-    fontWeight: "600",
+  emptyState: {
+    marginTop: 100,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  rankingStreak: {
-    fontSize: 14,
-    color: "#7c4dff",
-    fontWeight: "bold",
+  emptyStateText: {
+    color: "#b2bec3",
+    fontSize: 18,
+    fontWeight: "600",
+    marginTop: 10,
   },
 });

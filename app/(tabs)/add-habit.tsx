@@ -1,11 +1,18 @@
 import { DATABASE_ID, databases, HABITS_COLLECTION_ID } from "@/lib/appwrite";
 import { useAuth } from "@/lib/auth-context";
+import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, View, ScrollView } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { ID } from "react-native-appwrite";
-import { Button, SegmentedButtons, TextInput, HelperText, Surface, Text } from "react-native-paper";
-import * as Haptics from "expo-haptics";
+import {
+  Button,
+  HelperText,
+  SegmentedButtons,
+  Surface,
+  Text,
+  TextInput,
+} from "react-native-paper";
 
 const FREQUENCIES = ["daily", "weekly", "monthly"] as const;
 type Frequency = (typeof FREQUENCIES)[number];
@@ -15,7 +22,9 @@ export default function AddHabitScreen() {
   const [desc, setDesc] = useState("");
   const [freq, setFreq] = useState<Frequency>("daily");
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ title?: string; general?: string }>({});
+  const [errors, setErrors] = useState<{ title?: string; general?: string }>(
+    {},
+  );
 
   const { user } = useAuth();
   const router = useRouter();
@@ -34,10 +43,13 @@ export default function AddHabitScreen() {
     if (!user || !validate()) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
-    } 
+    }
 
     if (!DATABASE_ID || !HABITS_COLLECTION_ID) {
-      setErrors({ general: "Database configuration missing. Check your environment variables." });
+      setErrors({
+        general:
+          "Database configuration missing. Check your environment variables.",
+      });
       return;
     }
 
@@ -53,8 +65,8 @@ export default function AddHabitScreen() {
           description: desc.trim(),
           frequency: freq,
           streak_count: 0,
-          last_completed: null, 
-        }
+          last_completed: null,
+        },
       );
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setTitle("");
@@ -63,7 +75,9 @@ export default function AddHabitScreen() {
       router.back();
     } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setErrors({ general: error.message || "Something went wrong. Please try again." });
+      setErrors({
+        general: error.message || "Something went wrong. Please try again.",
+      });
     } finally {
       setLoading(false);
     }
@@ -71,12 +85,17 @@ export default function AddHabitScreen() {
 
   return (
     <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
-      {/* General Error Banner */}
       {errors.general && (
         <Surface style={styles.errorBanner} elevation={1}>
           <Text style={styles.errorText}>{errors.general}</Text>
         </Surface>
       )}
+
+      <View style={styles.header}>
+        <Text variant="headlineSmall" style={styles.title}>
+          Add New Habit
+        </Text>
+      </View>
 
       <View style={styles.inputGroup}>
         <TextInput
@@ -95,7 +114,7 @@ export default function AddHabitScreen() {
           {errors.title}
         </HelperText>
       </View>
-      
+
       <TextInput
         label="Description (Optional)"
         mode="outlined"
@@ -108,21 +127,23 @@ export default function AddHabitScreen() {
       />
 
       <View style={styles.freqContainer}>
-        <Text variant="labelLarge" style={styles.label}>Frequency</Text>
+        <Text variant="labelLarge" style={styles.label}>
+          Frequency
+        </Text>
         <SegmentedButtons
           value={freq}
           onValueChange={(value) => setFreq(value as Frequency)}
           buttons={FREQUENCIES.map((f) => ({
             value: f,
             label: f.charAt(0).toUpperCase() + f.slice(1),
-            disabled: loading
+            disabled: loading,
           }))}
         />
       </View>
 
-      <Button 
-        mode="contained" 
-        onPress={handleSubmit} 
+      <Button
+        mode="contained"
+        onPress={handleSubmit}
         loading={loading}
         disabled={loading}
         contentStyle={styles.buttonInner}
@@ -134,11 +155,39 @@ export default function AddHabitScreen() {
   );
 }
 
+const colors = {
+  bg: "#FFF7ED",
+  card: "#FFFFFF",
+  cardBorder: "#FFE4C7",
+  textPrimary: "#3A2D28",
+  textSecondary: "#7A5C52",
+  accent: "#FF7A00",
+  accentSoft: "#FFF0E0",
+  success: "#4CAF50",
+  successSoft: "#E8F7EC",
+  danger: "#FF6B6B",
+  streak: "#FF9800",
+  freqDaily: "#6C5CE7",
+  freqWeekly: "#00B894",
+  freqMonthly: "#0984e3",
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: colors.bg,
+    paddingTop: 60,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  title: {
+    fontWeight: "800",
+    color: colors.textPrimary,
+    letterSpacing: -0.3,
   },
   inputGroup: {
     marginBottom: 4,
@@ -171,5 +220,5 @@ const styles = StyleSheet.create({
   errorText: {
     color: "#c62828",
     fontSize: 14,
-  }
+  },
 });
