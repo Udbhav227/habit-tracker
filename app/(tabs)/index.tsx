@@ -186,8 +186,11 @@ export default function Index() {
   const renderItem: ListRenderItem<Habit> = ({ item }) => {
     const isCompleted = completedHabits.includes(item.$id);
     const freqColor =
-      item.frequency === "daily" ? colors.freqDaily : colors.freqWeekly;
-
+      item.frequency === "daily"
+        ? colors.freqDaily
+        : item.frequency === "weekly"
+          ? colors.freqWeekly
+          : colors.freqMonthly;
 
     return (
       <Animated.View
@@ -323,6 +326,7 @@ const colors = {
   streak: "#FF9800",
   freqDaily: "#6C5CE7",
   freqWeekly: "#00B894",
+  freqMonthly: "#E17055",
 };
 
 const styles = StyleSheet.create({
